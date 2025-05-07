@@ -16,8 +16,13 @@ class ClinicSerializer(serializers.ModelSerializer):
         fields = ['id','city','contact_phone']
 
 class DoctorSerializer(serializers.ModelSerializer):
+    id = serializers.UUIDField(read_only=True)
     user = MyUserSerializer(read_only = True)
     clinic = ClinicSerializer(read_only = True)
+    patient_count = serializers.CharField(read_only = True)
+    reviews_count = serializers.CharField(read_only = True)
+    rating = serializers.CharField(read_only = True)
+    is_available = serializers.BooleanField(read_only = True)
     time_slots = serializers.SerializerMethodField(read_only = True)
     class Meta:
         model = Doctor

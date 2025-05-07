@@ -6,22 +6,24 @@ from djoser import utils
 
 
 class MyUserSerializer(serializers.ModelSerializer):
+    id = serializers.UUIDField(read_only=True)
     class Meta:
         model = User
-        fields = ['id', 'email','name','role']
+        fields = ['id', 'email','name','role','phone','city']
         
         
 
 class MyUserCreateSerializer(UserCreateSerializer):
-    location = serializers.CharField()
+    id = serializers.UUIDField(read_only=True)
+    phone = serializers.CharField()
+    name = serializers.CharField()
+    password = serializers.CharField(write_only=True)
+    city = serializers.CharField()
+    
     class Meta:
         model = User
-        fields = ['id', 'email', 'name','password','location','role']
-        extra_kwargs = {
-            'password':{'write_only':True},
-            'name':{'required':True},
-            'phone':{'required':True},
-        }
+        fields = ['id', 'email', 'name','password','phone','city','role']
+        
     
     def validate_location(self, value):
         if not City.objects.filter(name=value).exists():

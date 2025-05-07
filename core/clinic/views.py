@@ -15,7 +15,7 @@ from rest_framework.filters import SearchFilter
 
 class DoctorViewSet(ModelViewSet):
     queryset = Doctor.objects.all()
-    serializer_class = DoctorSerializer
+    
     permission_classes = [AllowAny]
     filter_backends = [DjangoFilterBackend , SearchFilter]
     filterset_class = DoctorFilter
@@ -25,7 +25,7 @@ class DoctorViewSet(ModelViewSet):
         if self.action in ['book_slot']:
             return  AppointmentCreateSerializer
         else:
-            return super().get_serializer_class()
+            return DoctorSerializer
         
     
     def get_permissions(self):

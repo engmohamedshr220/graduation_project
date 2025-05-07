@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Django REST App</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background: #f4f6f9;
+            color: #333;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: #24292e;
+            color: white;
+            padding: 1rem 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            margin: 0;
+        }
+
+        .nav a {
+            color: white;
+            text-decoration: none;
+            margin-left: 1.5rem;
+            font-weight: bold;
+        }
+
+        .nav a:hover {
+            text-decoration: underline;
+        }
+
+        .hero {
+            background: linear-gradient(to right, #0066ff, #00ccff);
+            color: white;
+            text-align: center;
+            padding: 4rem 1rem;
+        }
+
+        .hero h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+        }
+
+        .hero button {
+            background: white;
+            color: #0066ff;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            font-size: 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .hero button a {
+            text-decoration: none;
+            color: #0066ff;
+        }
+        .hero button:hover {
+            background-color: #e0e0e0;
+        }
+
+        .details {
+            padding: 3rem 1rem;
+            background: #ffffff;
+            text-align: center;
+        }
+
+        .details h3 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .details ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .details li {
+            font-size: 1.1rem;
+            margin: 0.5rem 0;
+        }
+
+        .footer {
+            background: #24292e;
+            color: white;
+            text-align: center;
+            padding: 1rem;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="header">
+        <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
+            <h1 class="logo">Django REST App</h1>
+            <nav class="nav">
+                <a href="/api/">API</a>
+                <a href="/admin/">Admin</a>
+            </nav>
+        </div>
+    </header>
+
+    <section class="hero">
+        <div class="container">
+            <h2>Welcome to Breast Cancer API</h2>
+            <p>To the API DOCS click on API.</p>
+            <button onclick="scrollToDetails()"><a href="/schema/swagger-ui/">API DOCS </a></button>
+        </div>
+    </section>
+
+    <section class="details" id="details">
+        <div class="container">
+            <h3>Available Features</h3>
+            <ul>
+                <li>🌐 RESTful API</li>
+                <li>🔒 Secure Admin Panel</li>
+                <li>⚙️ Extendable and Scalable Backend</li>
+            </ul>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            &copy; {{ year|default:"2025" }} Django REST App. All rights reserved.
+        </div>
+    </footer>
+
+    <script>
+        function scrollToDetails() {
+            document.getElementById('details').scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+
+</html>
