@@ -28,7 +28,7 @@ SECRET_KEY = 'django-insecure-zgo4#@i7&$c!_fk=9c0cm(tvu#!pdt4s947gzxcez8e_!ndfyb
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env.bool("DEBUG", default=True)
 
-ALLOWED_HOSTS = []
+
 import dj_database_url
 
 
@@ -219,6 +219,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOW_ALL_ORIGINS = True
+ALLOWED_HOSTS = ['*']
 
 MEDIA_URL = '/media/'  # URL for accessing media files
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media') 
