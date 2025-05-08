@@ -17,8 +17,7 @@ from ..env import BASE_DIR , env
 
 env.read_env(os.path.join(BASE_DIR, ".env"))
 
-print("BASE_DIR", BASE_DIR)
-print("env", env("DEBUG"))
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
@@ -36,22 +35,23 @@ import dj_database_url
 
 
 INSTALLED_APPS = [
-    'daphne',
+
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'api',
     'accounts',
     
     'clinic',
-    'api',
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
     'stories',
     'djoser',
+    'city',
     'chat',
     'channels',
         'django_filters',
@@ -218,7 +218,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CORS_ALLOW_ALL_ORIGINS: bool = True
+CORS_ALLOW_ALL_ORIGINS = True
 
 MEDIA_URL = '/media/'  # URL for accessing media files
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media') 

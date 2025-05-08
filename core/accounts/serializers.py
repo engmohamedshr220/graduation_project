@@ -25,7 +25,7 @@ class MyUserCreateSerializer(UserCreateSerializer):
         fields = ['id', 'email', 'name','password','phone','city','role']
         
     
-    def validate_location(self, value):
+    def validate_city(self, value):
         if not City.objects.filter(name=value).exists():
             raise serializers.ValidationError('location is not a valid choice')
         return City.objects.filter(name=value).first()

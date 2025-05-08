@@ -6,7 +6,7 @@ from clinic.models import Clinic
 
 @admin.register(Doctor)
 class DoctorAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user','experience_years','clinic',)
+    list_display = ('id', 'user','experience_years', 'is_available', 'rating')
     search_fields = ['user__name']
     list_filter = ['experience_years']
     ordering = ['user__name']

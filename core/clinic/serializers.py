@@ -1,7 +1,8 @@
 from rest_framework import serializers
 from django.db import transaction
 from accounts.serializers import MyUserSerializer
-from .models import Patient , Doctor ,Clinic,TimeSlot,Appointment
+from accounts.models import User
+from .models import Appointment, Clinic, Doctor, Patient, Reviews, TimeSlot
 
 class PatientSerializer(serializers.ModelSerializer):
     user = MyUserSerializer()
@@ -13,23 +14,24 @@ class PatientSerializer(serializers.ModelSerializer):
 class ClinicSerializer(serializers.ModelSerializer):
     class Meta:
         model = Clinic
-        fields = ['id','city','contact_phone']
+        fields = ['id','doctor','city','contact_phone']
 
 class DoctorSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(read_only=True)
-    user = MyUserSerializer(read_only = True)
-    clinic = ClinicSerializer(read_only = True)
+    # user = serializers.PrimaryKeyRelatedField(queryset = User.objects.all())
+    
     patient_count = serializers.CharField(read_only = True)
     reviews_count = serializers.CharField(read_only = True)
     rating = serializers.CharField(read_only = True)
     is_available = serializers.BooleanField(read_only = True)
     time_slots = serializers.SerializerMethodField(read_only = True)
+    city = serializers.CharField()
     class Meta:
         model = Doctor
         fields = [
-                'id','user','experience_years','clinic',
-                'time_slots','start_hour','end_hour','reviews_count',
-                'rating','patient_count','is_available','profile_img'
+                'id','user','experience_years',
+                'time_slots','reviews_count',
+                'rating','patient_count','is_available','profile_img' , 'city'
                 ]
     
     def to_representation(self, instance):
@@ -40,15 +42,30 @@ class DoctorSerializer(serializers.ModelSerializer):
             'phone': instance.user.phone
         }
         representation['clinic'] = {
-            'city': instance.clinic.city.name,
-            'contact_phone': instance.clinic.contact_phone
+            'city': instance.clinics.city.name,
+            'contact_phone': instance.clinics.contact_phone
         }
-
+ 
         return representation
     def get_time_slots(self,instance):
         booked_slots = Appointment.objects.values_list('time_slot', flat=True)
-        time_slots = TimeSlot.objects.exclude(id__in=booked_slots)
+        time_slots = TimeSlot.objects.exclude(
+            id__in=booked_slots).filter(
+                start_time__gte=instance.start_hour,
+                end_time__lte=instance.end_hour,)
         return TimeSlotSerializer(time_slots, many=True).data
+
+class ReviewsSerializer(serializers.ModelSerializer):
+    patient = PatientSerializer(read_only = True)
+    class Meta:
+        model = Reviews
+        fields = ['id','doctor','patient','review','created_at']
+        extra_kwargs = {
+            'id': {'read_only': True},
+            'created_at': {'read_only': True},
+            'doctor': {'read_only': True},
+            'patient': {'read_only': True},
+        }
 
 class TimeSlotSerializer(serializers.ModelSerializer):    
     class Meta:
@@ -72,8 +89,7 @@ class AppointmentSerializer(serializers.ModelSerializer):
             'updated_at': {'read_only': True},
             'doctor': {'read_only': True},
         }
-    
-    
+
         
 class AppointmentCreateSerializer(serializers.ModelSerializer):
 

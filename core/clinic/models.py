@@ -16,15 +16,7 @@ class Patient(models.Model):
 
 
 
-class Clinic(models.Model):
-    id = models.UUIDField(primary_key=True , unique=True , verbose_name="id", default=uuid.uuid4)
 
-    city = models.ForeignKey(City, on_delete=models.CASCADE ,default=None)
-    contact_phone = models.CharField(max_length=254)
-    
-    def __str__(self):
-        return f'{self.city} - {self.contact_phone}'
-    
 class Doctor(models.Model):
     id = models.UUIDField(primary_key=True , unique=True , verbose_name="id", default=uuid.uuid4)
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -35,10 +27,19 @@ class Doctor(models.Model):
     rating = models.FloatField(default=0.0 , validators=[MinValueValidator(0.0), MaxValueValidator(5.0)])
     patient_count = models.IntegerField(default=0)
     is_available = models.BooleanField(default=True)
-    clinic = models.ForeignKey(Clinic, on_delete=models.CASCADE , null=True)
     profile_img = models.ImageField(upload_to=upload_doctor_profile_image,null=True,blank=True)
     is_active = models.BooleanField(default=True)
-    city = models.ForeignKey(City, on_delete=models.SET_NULL ,related_name='doctors', null=True,default=City.CityChoices.NOT_SPECIFIED)
+    city = models.ForeignKey(City, on_delete=models.SET_NULL ,related_name='doctors', null=True,blank=True)
+
+class Clinic(models.Model):
+    id = models.UUIDField(primary_key=True , unique=True , verbose_name="id", default=uuid.uuid4)
+    doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE , null=True, related_name='clinics')
+    city = models.ForeignKey(City, on_delete=models.CASCADE ,default=None , related_name='clinics')
+    contact_phone = models.CharField(max_length=254)
+    
+    def __str__(self):
+        return f'{self.city} - {self.contact_phone}'
+    
 
 class Reviews(models.Model):
     id = models.UUIDField(primary_key=True , unique=True , verbose_name="id", default=uuid.uuid4)
