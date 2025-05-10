@@ -20,20 +20,22 @@ class Patient(models.Model):
 class Doctor(models.Model):
     id = models.UUIDField(primary_key=True , unique=True , verbose_name="id", default=uuid.uuid4)
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    start_hour = models.TimeField(default=0)
-    end_hour = models.TimeField(default=0)
+    start_hour = models.TimeField(default=0 , null=True ,blank=True)
+    end_hour = models.TimeField(default=0, null=True ,blank=True) 
     experience_years = models.IntegerField(default=0)
     reviews_count = models.IntegerField(default=0)
     rating = models.FloatField(default=0.0 , validators=[MinValueValidator(0.0), MaxValueValidator(5.0)])
     patient_count = models.IntegerField(default=0)
     is_available = models.BooleanField(default=True)
-    profile_img = models.ImageField(upload_to=upload_doctor_profile_image,null=True,blank=True)
+    profile_img = models.ImageField(upload_to=upload_doctor_profile_image,null=True ,blank=True)
     is_active = models.BooleanField(default=True)
-    city = models.ForeignKey(City, on_delete=models.SET_NULL ,related_name='doctors', null=True,blank=True)
+    city = models.ForeignKey(City, on_delete=models.SET_NULL ,related_name='doctors', null=True ,blank=True)
+
+
 
 class Clinic(models.Model):
     id = models.UUIDField(primary_key=True , unique=True , verbose_name="id", default=uuid.uuid4)
-    doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE , null=True, related_name='clinics')
+    doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE , null=True ,blank=True, related_name='clinics')
     city = models.ForeignKey(City, on_delete=models.CASCADE ,default=None , related_name='clinics')
     contact_phone = models.CharField(max_length=254)
     
@@ -79,11 +81,11 @@ class Appointment(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     time_slot = models.ForeignKey(TimeSlot, on_delete=models.CASCADE)
     
-    name = models.CharField(max_length=254 , null=True)
-    phone = models.CharField(max_length=254,null=True)
+    name = models.CharField(max_length=254 , null=True ,blank=True)
+    phone = models.CharField(max_length=254,null=True ,blank=True)
     age = models.DecimalField(max_digits=3, decimal_places=0,default=0, validators=[MinValueValidator(0), MaxValueValidator(100)])
     city = models.CharField(max_length=254,choices=City.CityChoices,default=City.CityChoices.NOT_SPECIFIED)
-    desc = models.TextField(blank=True, null=True)
+    desc = models.TextField(blank=True, null=True )
     
     def clean(self):
         if not self.patient and (not self.name or not self.phone or not self.age or not self.city ):

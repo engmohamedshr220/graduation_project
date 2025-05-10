@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from accounts.models import City
+from city.models import City
 # from django.shortcuts import 
 class Command(BaseCommand):
     

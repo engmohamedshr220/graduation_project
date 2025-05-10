@@ -27,8 +27,25 @@ class MyUserCreateSerializer(UserCreateSerializer):
     
     def validate_city(self, value):
         if not City.objects.filter(name=value).exists():
-            raise serializers.ValidationError('location is not a valid choice')
+            raise serializers.ValidationError('This location is not available in our service areas')
         return City.objects.filter(name=value).first()
+
+    def validate(self, attrs):
+        # Check if email exists
+        email = attrs.get('email')
+        if email and User.objects.filter(email=email).exists():
+            raise serializers.ValidationError({
+                'email': 'This email is already registered'
+            })
+        
+        # Check if phone exists
+        phone = attrs.get('phone')
+        if phone and User.objects.filter(phone=phone).exists():
+            raise serializers.ValidationError({
+                'phone': 'This phone number is already registered'
+            })
+        
+        return super().validate(attrs)
     def validate_password(self ,value):
         pattern = r"^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
         

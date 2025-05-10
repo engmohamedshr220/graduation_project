@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import User , City
+from .models import User 
 
 # Register your models here.
 
@@ -13,8 +13,5 @@ class UserAdmin(admin.ModelAdmin):
     search_fields = ['name', 'email']
     list_filter = ['role']
 
-@admin.register(City)
-class CityAdmin(admin.ModelAdmin):
-    list_display = ['name']
 
 

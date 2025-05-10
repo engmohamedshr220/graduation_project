@@ -12,15 +12,18 @@ class PatientSerializer(serializers.ModelSerializer):
     
 
 class ClinicSerializer(serializers.ModelSerializer):
+    
     class Meta:
         model = Clinic
         fields = ['id','doctor','city','contact_phone']
+        read_only_fields = ['id','doctor']
 
 class DoctorSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(read_only=True)
     # user = serializers.PrimaryKeyRelatedField(queryset = User.objects.all())
     
     patient_count = serializers.CharField(read_only = True)
+    clinic = ClinicSerializer()
     reviews_count = serializers.CharField(read_only = True)
     rating = serializers.CharField(read_only = True)
     is_available = serializers.BooleanField(read_only = True)
@@ -30,7 +33,7 @@ class DoctorSerializer(serializers.ModelSerializer):
         model = Doctor
         fields = [
                 'id','user','experience_years',
-                'time_slots','reviews_count',
+                'time_slots','reviews_count','clinic',
                 'rating','patient_count','is_available','profile_img' , 'city'
                 ]
     

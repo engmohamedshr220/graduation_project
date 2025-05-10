@@ -40,7 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'accounts',
-    
+    'city',
     'clinic',
     'api',
     'rest_framework',
@@ -50,9 +50,8 @@ INSTALLED_APPS = [
     'djoser',
     'chat',
     'channels',
-        'django_filters',
+    'django_filters',
     'drf_spectacular',
-    
 ]
 
 
