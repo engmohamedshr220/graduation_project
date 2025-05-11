@@ -10,8 +10,8 @@ class MyUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'email','name','role','phone','city']
-        
-        
+
+
 
 class MyUserCreateSerializer(UserCreateSerializer):
     id = serializers.UUIDField(read_only=True)

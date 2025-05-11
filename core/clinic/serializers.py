@@ -1,8 +1,10 @@
 from rest_framework import serializers
 from django.db import transaction
+from django.core.exceptions import ObjectDoesNotExist
 from accounts.serializers import MyUserSerializer
 from accounts.models import User
-from .models import Appointment, Clinic, Doctor, Patient, Reviews, TimeSlot
+import uuid
+from .models import Appointment, Clinic, Doctor, DoctorUpdateToken, Patient, Reviews, TimeSlot
 
 class PatientSerializer(serializers.ModelSerializer):
     user = MyUserSerializer()
@@ -20,7 +22,7 @@ class ClinicSerializer(serializers.ModelSerializer):
 
 class DoctorSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(read_only=True)
-    # user = serializers.PrimaryKeyRelatedField(queryset = User.objects.all())
+    user = serializers.UUIDField(read_only=True)
     
     patient_count = serializers.CharField(read_only = True)
     clinics = ClinicSerializer( many = True)
@@ -59,7 +61,8 @@ class ReviewsSerializer(serializers.ModelSerializer):
     patient = PatientSerializer(read_only = True)
     class Meta:
         model = Reviews
-        fields = ['id','doctor','patient','review','created_at']
+        fields = ['id','doctor','patient','review','created_at'
+                  ]
         extra_kwargs = {
             'id': {'read_only': True},
             'created_at': {'read_only': True},
@@ -116,3 +119,48 @@ class AppointmentCreateSerializer(serializers.ModelSerializer):
                 doctor=doctor,
                 **validated_data
             )
+            
+
+class DoctorUpdateSerializer(serializers.Serializer):
+    token = serializers.UUIDField()
+    clinics = ClinicSerializer(many=True) 
+    experience_years = serializers.IntegerField()
+    profile_img = serializers.ImageField(required=False)
+    
+
+    def save(self, **kwargs):
+        token = self.validated_data.get('token')
+        clinics = self.validated_data.get('clinics')
+        experience_years = self.validated_data.get('experience_years')
+        profile_img = self.validated_data.get('profile_img')
+
+        try:
+            doctor = DoctorUpdateToken.objects.get(token=token).doctor
+        except ObjectDoesNotExist:
+            raise serializers.ValidationError({"token": "Invalid or expired token."})
+
+        with transaction.atomic():
+            # Update doctor's fields
+            if experience_years:
+                doctor.experience_years = experience_years
+            if profile_img:
+                doctor.profile_img = profile_img
+
+            # Create clinics if provided
+            if clinics:
+                for clinic in clinics:
+                    # Avoid duplicate clinics
+                    if not Clinic.objects.filter(
+                        doctor=doctor,
+                        city=clinic['city'],
+                        contact_phone=clinic['contact_phone']
+                    ).exists():
+                        Clinic.objects.create(
+                            doctor=doctor,
+                            city=clinic['city'],
+                            contact_phone=clinic['contact_phone']
+                        )
+
+            doctor.save()
+
+        return doctor

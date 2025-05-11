@@ -3,25 +3,28 @@ import re
 from  rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework import status
+from django.http import HttpResponseNotAllowed
+from  rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from accounts.permissions import IsAdminUser
 from clinic.filters import DoctorFilter
+from accounts.permissions import IsAdminOrDoctorUser
 from .models import Appointment, Doctor, Reviews
 from .serializers import (AppointmentCreateSerializer, AppointmentSerializer, DoctorSerializer,
-    ReviewsSerializer)
+    ReviewsSerializer,DoctorUpdateSerializer)
 from drf_spectacular.utils import extend_schema,OpenApiExample
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter
-
+from rest_framework import status 
 class DoctorViewSet(ModelViewSet):
     queryset = Doctor.objects.all()
     
     permission_classes = [AllowAny]
     filter_backends = [DjangoFilterBackend , SearchFilter]
     filterset_class = DoctorFilter
-    
-    
+    @extend_schema(exclude=True)
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
     def get_serializer_class(self):
         if self.action in ['book_slot']:
             return  AppointmentCreateSerializer
@@ -37,13 +40,12 @@ class DoctorViewSet(ModelViewSet):
     
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            self.permission_classes = [IsAdminUser]
+            self.permission_classes = [IsAdminOrDoctorUser]
         elif self.action == 'add_review':
             self.permission_classes = [IsAuthenticated]
         return super().get_permissions()
     
     
-
     @extend_schema(
         request=AppointmentCreateSerializer,
         responses={
@@ -99,6 +101,7 @@ class DoctorViewSet(ModelViewSet):
         serializer = ReviewsSerializer(reviews, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
+    
     @action(detail=True, methods=['post'],url_path = 'add-review',url_name = 'make_review')
     def add_review(self, request, pk=None):
         doctor = self.get_object()
@@ -114,3 +117,21 @@ class DoctorViewSet(ModelViewSet):
         )
         doctor.reviews_count += 1
         return Response({'detail': 'Review added successfully'}, status=status.HTTP_201_CREATED)
+
+
+
+class DoctorUpdateTokenApi(APIView):
+    @extend_schema(
+        request=DoctorUpdateSerializer,
+        responses={200: DoctorUpdateSerializer},
+        description="Update doctor profile using a token."
+    )
+    def post(self, request, *args, **kwargs):
+        token = kwargs.get('token')
+        serializer = DoctorUpdateSerializer(token = token ,data=request.data)
+        serializer.is_valid(raise_exception=True)
+        doctor = serializer.save()
+        return Response(serializer.data , status=status.HTTP_200_OK)
+
+
+

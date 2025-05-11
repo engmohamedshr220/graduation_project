@@ -59,8 +59,8 @@ class User(AbstractBaseUser,PermissionsMixin):
     phone = models.CharField(max_length=254 , unique=True,null=True , blank=True,verbose_name="phone")
     gender = models.CharField(max_length=50, choices=Gender.choices,default=Gender.NOT_SPECIFIED)
     city = models.ForeignKey(City , on_delete=models.SET_NULL , default=None , null=True , blank=True)
+    age = models.IntegerField(default=None,null=True , blank=True)
     role  =  models.CharField(max_length=50, choices=Role.choices , default=Role.PATIENT)
-    
     is_staff = models.BooleanField(
         ("staff status"),
         default=False,

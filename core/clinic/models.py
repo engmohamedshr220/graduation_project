@@ -2,6 +2,7 @@ from django.db import models
 from accounts.models import User
 import re
 import uuid
+from django.utils import timezone
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
 from accounts.models import City
@@ -19,9 +20,9 @@ class Patient(models.Model):
 
 class Doctor(models.Model):
     id = models.UUIDField(primary_key=True , unique=True , verbose_name="id", default=uuid.uuid4)
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    start_hour = models.TimeField(default=0 , null=True ,blank=True)
-    end_hour = models.TimeField(default=0, null=True ,blank=True) 
+    user = models.OneToOneField(User, on_delete=models.CASCADE,related_name='doctor')
+    start_hour = models.TimeField( null=True ,blank=True)
+    end_hour = models.TimeField( null=True ,blank=True) 
     experience_years = models.IntegerField(default=0)
     reviews_count = models.IntegerField(default=0)
     rating = models.FloatField(default=0.0 , validators=[MinValueValidator(0.0), MaxValueValidator(5.0)])
@@ -73,44 +74,71 @@ class Appointment(models.Model):
         CONFIRMED = 'confirmed', 'confirmed'
         CANCELLED = 'cancelled', 'cancelled'
         COMPLETED = 'completed', 'completed'
-    id = models.UUIDField(primary_key=True , unique=True , verbose_name="id", default=uuid.uuid4)
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
-    doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE)
-    status = models.CharField(max_length=254,choices=StatusChoices.choices,default=StatusChoices.PENDING)
+    id = models.UUIDField(primary_key=True, unique=True, verbose_name="id", default=uuid.uuid4)
+    patient = models.ForeignKey('Patient', on_delete=models.CASCADE, null=True, blank=True)
+    doctor = models.ForeignKey('Doctor', on_delete=models.CASCADE)
+    status = models.CharField(max_length=254, choices=StatusChoices.choices, default=StatusChoices.PENDING)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    time_slot = models.ForeignKey(TimeSlot, on_delete=models.CASCADE)
+    time_slot = models.ForeignKey('TimeSlot', on_delete=models.CASCADE)
     
-    name = models.CharField(max_length=254 , null=True ,blank=True)
-    phone = models.CharField(max_length=254,null=True ,blank=True)
-    age = models.DecimalField(max_digits=3, decimal_places=0,default=0, validators=[MinValueValidator(0), MaxValueValidator(100)])
-    city = models.CharField(max_length=254,choices=City.CityChoices,default=City.CityChoices.NOT_SPECIFIED)
-    desc = models.TextField(blank=True, null=True )
+    name = models.CharField(max_length=254, null=True, blank=True)
+    phone = models.CharField(max_length=254, null=True, blank=True)
+    age = models.DecimalField(max_digits=3, decimal_places=0, default=0, 
+                              validators=[MinValueValidator(0), MaxValueValidator(100)],
+                              null=True, blank=True)
+    city = models.CharField(max_length=254, null=True, blank=True)
+    desc = models.TextField(blank=True, null=True)
     
     def clean(self):
-        if not self.patient and (not self.name or not self.phone or not self.age or not self.city ):
-            raise ValidationError('If patient is not provided, name, phone, age and city must be provided')
-        if self.patient and (self.name or self.phone or self.age or self.city ):
-            raise ValidationError('If patient is provided, name, phone, age and city must not be provided')
+        # For guest appointments (no patient), all guest fields must be provided
+        if not self.patient:
+            if not all([self.name, self.phone, self.age, self.city]):
+                raise ValidationError('For guest appointments, name, phone, age and city must be provided')
+        
+        # We don't validate presence of guest fields for patient appointments
+        # as they'll be populated in save() if needed
     
     def save(self, *args, **kwargs):
+        # If this is a patient appointment and fields are not set, copy from patient
         if self.patient:
-            self.name = self.patient.user.name
-            self.phone = self.patient.user.phone
-            self.age = self.patient.user.age
-            self.city = self.patient.user.city
-            
+            if not self.name:
+                self.name = self.patient.user.name
+            if not self.phone:
+                self.phone = self.patient.user.phone
+            if not self.age and hasattr(self.patient, 'age'):
+                self.age = self.patient.user.age
+            if not self.city and hasattr(self.patient.user, 'city'):
+                self.city = self.patient.user.city.name if self.patient.user.city else None
+        
+        # Clean before save to ensure validation
         self.clean()
         super().save(*args, **kwargs)
+    
     def __str__(self):
-        return f'{self.patient.user.name} - {self.doctor.user.name} - {self.time_slot.date} - {self.status}'
+        patient_name = self.patient.user.name if self.patient else self.name
+        return f'{patient_name} - {self.doctor.user.name} - {self.time_slot.date} - {self.status}'
+    
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=['doctor','time_slot',],name='unique_doctor_timeslot'),
-            models.UniqueConstraint(fields=['patient','time_slot'],name='unique_patient_timeslot'),
-            
+            models.UniqueConstraint(fields=['doctor', 'time_slot'], name='unique_doctor_timeslot'),
+            models.UniqueConstraint(fields=['patient', 'time_slot'], name='unique_patient_timeslot',
+                                   condition=models.Q(patient__isnull=False)),
         ]
+    
 
 
 
 
+class DoctorUpdateToken(models.Model):
+    
+    id = models.UUIDField(primary_key=True , unique=True , verbose_name="id", default=uuid.uuid4)
+    doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, related_name='tokens')
+    token = models.UUIDField(default=uuid.uuid4, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def is_expired(self):
+        return self.created_at < timezone.now() - timezone.timedelta(minutes=15)
+    
+    def __str__(self):
+        return f'{self.doctor.user.name} - {self.token}'

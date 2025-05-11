@@ -224,3 +224,5 @@ ALLOWED_HOSTS = ['*','localhost']
 
 MEDIA_URL = '/media/'  # URL for accessing media files
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media') 
+
+FRONTEND_BASE_URL = env("FRONTEND_BASE_URL", default="http://localhost:5173/")  # Replace with your actual frontend URL
