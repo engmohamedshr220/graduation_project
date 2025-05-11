@@ -23,7 +23,7 @@ class DoctorSerializer(serializers.ModelSerializer):
     # user = serializers.PrimaryKeyRelatedField(queryset = User.objects.all())
     
     patient_count = serializers.CharField(read_only = True)
-    clinic = ClinicSerializer()
+    clinics = ClinicSerializer( many = True)
     reviews_count = serializers.CharField(read_only = True)
     rating = serializers.CharField(read_only = True)
     is_available = serializers.BooleanField(read_only = True)
@@ -33,7 +33,7 @@ class DoctorSerializer(serializers.ModelSerializer):
         model = Doctor
         fields = [
                 'id','user','experience_years',
-                'time_slots','reviews_count','clinic',
+                'time_slots','reviews_count','clinics',
                 'rating','patient_count','is_available','profile_img' , 'city'
                 ]
     
@@ -44,10 +44,7 @@ class DoctorSerializer(serializers.ModelSerializer):
             'email': instance.user.email,
             'phone': instance.user.phone
         }
-        representation['clinic'] = {
-            'city': instance.clinics.city.name,
-            'contact_phone': instance.clinics.contact_phone
-        }
+        
  
         return representation
     def get_time_slots(self,instance):

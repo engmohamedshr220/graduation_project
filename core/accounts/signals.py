@@ -72,21 +72,21 @@ def create_user_profile(sender, instance, created, **kwargs):
                 error_msg = f'Failed to create patient profile: {str(e)}'
                 print(error_msg)
                 raise Exception(error_msg)
-        # if created:
-        #     if instance.role == 'doctor':
-        #         try:
-        #             html_content = render_to_string('emails/welcome_doctor.html', {
-        #                 'name': instance.name,
-        #             })
-        #             # Fallback plain text version
-        #             text_content = f"Hello Dr/{instance.name}"
-        #             subject = "Welcome to Vital Breast Team"
-        #             from_email = settings.EMAIL_HOST_USER
-        #             to_email = [instance.email]
-        #             email_message = EmailMultiAlternatives(subject, text_content, from_email, to_email)
-        #             email_message.attach_alternative(html_content, "text/html")
-        #             email_message.send()
-        #         except Exception as e:
-        #             print(f"Error sending email: {e}")
-        #             return
+        if created:
+            if instance.role == 'doctor':
+                try:
+                    html_content = render_to_string('emails/welcome_doctor.html', {
+                        'name': instance.name,
+                    })
+                    # Fallback plain text version
+                    text_content = f"Hello Dr/{instance.name}"
+                    subject = "Welcome to Vital Breast Team"
+                    from_email = settings.EMAIL_HOST_USER
+                    to_email = [instance.email]
+                    email_message = EmailMultiAlternatives(subject, text_content, from_email, to_email)
+                    email_message.attach_alternative(html_content, "text/html")
+                    email_message.send()
+                except Exception as e:
+                    print(f"Error sending email: {e}")
+                    return
             
