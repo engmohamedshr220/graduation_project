@@ -15,6 +15,7 @@ class MyUserSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         representation = super().to_representation(instance)
         
+        representation['city'] = instance.city.name if instance.city else None
         if instance.role == 'doctor':
             representation['doctor'] = {
                 "id": instance.doctor.id,
