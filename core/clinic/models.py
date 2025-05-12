@@ -6,10 +6,7 @@ from django.utils import timezone
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
 from accounts.models import City
-def upload_doctor_profile_image(instance, filename):
-    ext = filename.split('.')[-1]
-    filename = f'{instance.user.name}-profile-image.{ext}'
-    return f'doctor_profile_images/{instance.id}/{filename}'
+
 
 class Patient(models.Model):
     id = models.UUIDField(primary_key=True , unique=True , verbose_name="id", default=uuid.uuid4)
@@ -28,7 +25,7 @@ class Doctor(models.Model):
     rating = models.FloatField(default=0.0 , validators=[MinValueValidator(0.0), MaxValueValidator(5.0)])
     patient_count = models.IntegerField(default=0)
     is_available = models.BooleanField(default=True)
-    profile_img = models.ImageField(upload_to=upload_doctor_profile_image,null=True ,blank=True)
+
     is_active = models.BooleanField(default=True)
     city = models.ForeignKey(City, on_delete=models.SET_NULL ,related_name='doctors', null=True ,blank=True)
 

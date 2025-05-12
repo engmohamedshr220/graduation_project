@@ -12,7 +12,10 @@ from city.models import City
 
 
 
-
+def upload_user_profile_image(instance, filename):
+    ext = filename.split('.')[-1]
+    filename = f'{instance.user.name}-profile-image.{ext}'
+    return f'doctor_profile_images/{instance.id}/{filename}'
 
 
 class MyUserManager(BaseUserManager):
@@ -61,6 +64,7 @@ class User(AbstractBaseUser,PermissionsMixin):
     city = models.ForeignKey(City , on_delete=models.SET_NULL , default=None , null=True , blank=True)
     age = models.IntegerField(default=None,null=True , blank=True)
     role  =  models.CharField(max_length=50, choices=Role.choices , default=Role.PATIENT)
+    profile_img = models.ImageField(upload_to=upload_user_profile_image,default='defualt/default_img.png' , null=True , blank=True)
     is_staff = models.BooleanField(
         ("staff status"),
         default=False,

@@ -10,7 +10,7 @@ class MyUserSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(read_only=True)
     class Meta:
         model = User
-        fields = ['id', 'email','name','role','phone','city']
+        fields = ['id', 'email','name','role','phone','city','profile_img']
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
@@ -23,7 +23,6 @@ class MyUserSerializer(serializers.ModelSerializer):
                 'reviews_count': instance.doctor.reviews_count,
                 'patient_count': instance.doctor.patient_count,
                 'is_available': instance.doctor.is_available,
-                'profile_img': instance.doctor.profile_img.url if instance.doctor.profile_img else None,
                 'clinics': [
                     {
                         'id': clinic.id,
