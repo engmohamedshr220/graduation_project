@@ -8,6 +8,7 @@ from djoser import utils
 
 class MyUserSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(read_only=True)
+    email = serializers.EmailField(read_only=True)
     class Meta:
         model = User
         fields = ['id', 'email','name','role','phone','city','profile_img']
@@ -38,6 +39,15 @@ class MyUserSerializer(serializers.ModelSerializer):
             }
         return representation
 
+    def update(self, instance, validated_data):
+        # Allow partial update if not all fields are provided
+        instance.name = validated_data.get('name', instance.name)
+        instance.phone = validated_data.get('phone', instance.phone)
+        instance.city = validated_data.get('city', instance.city)
+        instance.profile_img = validated_data.get('profile_img', instance.profile_img)
+        
+        instance.save()
+        return instance
 
 class MyUserCreateSerializer(UserCreateSerializer):
     id = serializers.UUIDField(read_only=True)
@@ -86,7 +96,8 @@ class MyUserCreateSerializer(UserCreateSerializer):
         represent['auth_token'] = token.key
         return represent
     
-    
+
+
 
 class ResetPasswordEmailSerializer(serializers.Serializer):
     email = serializers.EmailField()
