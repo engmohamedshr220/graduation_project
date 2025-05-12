@@ -1,17 +1,27 @@
 from rest_framework import serializers
 from django.db import transaction
 from django.core.exceptions import ObjectDoesNotExist
-from accounts.serializers import MyUserSerializer
-from accounts.models import User
+
+
 import uuid
+
 from .models import Appointment, Clinic, Doctor, DoctorUpdateToken, Patient, Reviews, TimeSlot
 
 class PatientSerializer(serializers.ModelSerializer):
-    user = MyUserSerializer()
+    user = serializers.SerializerMethodField()
     class Meta:
         model = Patient
         fields = ['id','user']
     
+    def get_user(self,obj):
+        return {
+            "name": obj.user.name,
+            "email": obj.user.email,
+            "phone": obj.user.phone,
+            'city': obj.user.city,
+            'role': obj.user.role,
+            
+        }
 
 class ClinicSerializer(serializers.ModelSerializer):
     

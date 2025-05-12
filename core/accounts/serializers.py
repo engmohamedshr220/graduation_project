@@ -1,5 +1,6 @@
 import re
 from rest_framework import serializers
+from clinic.serializers import DoctorSerializer
 from .models import City, User
 from djoser.serializers import UserCreateSerializer
 from djoser import utils
@@ -11,6 +12,31 @@ class MyUserSerializer(serializers.ModelSerializer):
         model = User
         fields = ['id', 'email','name','role','phone','city']
 
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        
+        if instance.role == 'doctor':
+            representation['doctor'] = {
+                "id": instance.doctor.id,
+                "experience_years": instance.doctor.experience_years,
+                'rating': instance.doctor.rating,
+                'reviews_count': instance.doctor.reviews_count,
+                'patient_count': instance.doctor.patient_count,
+                'is_available': instance.doctor.is_available,
+                'profile_img': instance.doctor.profile_img.url if instance.doctor.profile_img else None,
+                'clinics': [
+                    {
+                        'id': clinic.id,
+                        'city': clinic.city.name,
+                        'contact_phone': clinic.contact_phone
+                    } for clinic in instance.doctor.clinics.all()
+                ],
+                'start_hour': instance.doctor.start_hour,
+                'end_hour': instance.doctor.end_hour,
+                'city': instance.doctor.city.name if instance.doctor.city else None,
+                
+            }
+        return representation
 
 
 class MyUserCreateSerializer(UserCreateSerializer):
@@ -60,6 +86,8 @@ class MyUserCreateSerializer(UserCreateSerializer):
         represent['auth_token'] = token.key
         return represent
     
+    
+
 class ResetPasswordEmailSerializer(serializers.Serializer):
     email = serializers.EmailField()
     
