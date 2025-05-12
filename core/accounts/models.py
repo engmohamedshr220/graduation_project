@@ -39,10 +39,12 @@ class MyUserManager(BaseUserManager):
     def create_superuser(self, email, password,**extraFields):
         extraFields.setdefault('is_staff',True)
         extraFields.setdefault('is_superuser',True)
+        extraFields.setdefault('role','admin')
         if extraFields.get("is_staff") is not True:
             raise ValueError("Superuser must have is_staff=True.")
         if extraFields.get("is_superuser") is not True:
             raise ValueError("Superuser must have is_superuser=True.")
+
         return self._create_user(email,password,**extraFields)
 
 

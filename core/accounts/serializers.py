@@ -9,10 +9,17 @@ from djoser import utils
 class MyUserSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(read_only=True)
     email = serializers.EmailField(read_only=True)
+    city = serializers.CharField(required=False)
     class Meta:
         model = User
         fields = ['id', 'email','name','role','phone','city','profile_img']
 
+    def validate_city(self, value):
+        if not value:
+            return City.CityChoices.NOT_SPECIFIED
+        if not City.objects.filter(name=value).exists():
+            raise serializers.ValidationError('This location is not available in our service areas')
+        return City.objects.filter(name=value).first()
     def to_representation(self, instance):
         representation = super().to_representation(instance)
         

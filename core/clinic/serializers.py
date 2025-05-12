@@ -46,7 +46,7 @@ class DoctorSerializer(serializers.ModelSerializer):
         fields = [
                 'id','user','experience_years',
                 'time_slots','reviews_count','clinics',
-                'rating','patient_count','is_available','profile_img' , 'city'
+                'rating','patient_count','is_available' , 'city'
                 ]
     
     def to_representation(self, instance):

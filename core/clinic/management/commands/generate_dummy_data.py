@@ -27,10 +27,7 @@ class Command(BaseCommand):
         User.objects.filter(role__in=['doctor', 'patient']).delete()
 
         # Create cities
-        city_choices = [
-            'Cairo', 'Alexandria', 'Giza', 'Sharm El Sheikh', 'Hurghada',
-            'Luxor', 'Aswan', 'Port Said', 'Suez', 'Ismailia'
-        ]
+        city_choices = City.CityChoices.choices
         
         city_objects = []
         for name in city_choices:
