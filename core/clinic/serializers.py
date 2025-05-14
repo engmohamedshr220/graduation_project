@@ -1,10 +1,14 @@
+import re
 from rest_framework import serializers
 from django.db import transaction
 from django.core.exceptions import ObjectDoesNotExist
 
 
+import rest_framework.generics
 import uuid
 
+from city.models import City
+from city.serializers import CitySerializer
 from .models import Appointment, Clinic, Doctor, DoctorUpdateToken, Patient, Reviews, TimeSlot
 
 class PatientSerializer(serializers.ModelSerializer):
@@ -18,7 +22,7 @@ class PatientSerializer(serializers.ModelSerializer):
             "name": obj.user.name,
             "email": obj.user.email,
             "phone": obj.user.phone,
-            'city': obj.user.city,
+            'city': obj.user.city.name,
             'role': obj.user.role,
             
         }
@@ -57,7 +61,7 @@ class DoctorSerializer(serializers.ModelSerializer):
             'phone': instance.user.phone
         }
         
- 
+
         return representation
     def get_time_slots(self,instance):
         booked_slots = Appointment.objects.values_list('time_slot', flat=True)
@@ -90,12 +94,13 @@ class AppointmentSerializer(serializers.ModelSerializer):
     doctor = DoctorSerializer(read_only = True)
     time_slot = TimeSlotSerializer(read_only = True)
     patient = PatientSerializer(read_only = True)
+    city = serializers.CharField( read_only=True)
     class Meta:
         model = Appointment
         fields = ['id','doctor','patient','time_slot',
-                  'status','name','age','phone','city',
-                  'desc','created_at','updated_at'
-                  ]
+                'status','name','age','phone','city',
+                'desc','created_at','updated_at'
+                ]
         extra_kwargs = {
             'status': {'read_only': True},
             'created_at': {'read_only': True},
@@ -103,7 +108,48 @@ class AppointmentSerializer(serializers.ModelSerializer):
             'doctor': {'read_only': True},
         }
 
-        
+    def to_representation(self, instance):
+        representation=  super().to_representation(instance)
+        representation['doctor'] = {
+            'name': instance.doctor.user.name,
+            'email': instance.doctor.user.email,
+            'phone': instance.doctor.user.phone,
+            'city': instance.doctor.city.name if hasattr(instance.doctor.city,'name') else None,
+        }
+    
+    
+        return representation
+
+
+class AppointmentUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Appointment
+        fields = ['status', 'desc']  # Only allow these fields to be updated
+        extra_kwargs = {
+            'status': {
+                'choices': [Appointment.StatusChoices.CANCELLED, Appointment.StatusChoices.COMPLETED],
+                'error_messages': {
+                    'invalid_choice': 'Status can only be changed to "cancelled" or "completed"'
+                }
+            },
+            'desc': {'required': False, 'allow_blank': True}
+        }
+
+    def validate_status(self, value):
+        # Ensure only allowed status changes are permitted
+        if value not in [Appointment.StatusChoices.CANCELLED, Appointment.StatusChoices.COMPLETED]:
+            raise serializers.ValidationError(
+                'Status can only be changed to "cancelled" or "completed"'
+            )
+        return value
+    
+    def validate(self, attrs):
+        if self.instance.status == Appointment.StatusChoices.CANCELLED and \
+        attrs.get('status') == Appointment.StatusChoices.COMPLETED:
+            raise serializers.ValidationError(
+                'Cannot mark a cancelled appointment as completed'
+            )
+        return attrs
 class AppointmentCreateSerializer(serializers.ModelSerializer):
 
     time_slot = serializers.PrimaryKeyRelatedField(queryset=TimeSlot.objects.all())
@@ -131,6 +177,7 @@ class AppointmentCreateSerializer(serializers.ModelSerializer):
             )
             
 
+    
 class DoctorUpdateSerializer(serializers.Serializer):
     token = serializers.UUIDField()
     clinics = ClinicSerializer(many=True) 

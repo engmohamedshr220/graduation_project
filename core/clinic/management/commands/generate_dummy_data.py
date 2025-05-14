@@ -18,23 +18,25 @@ class Command(BaseCommand):
 
         # Clear existing data (optional - be careful with this in production)
         self.stdout.write('Deleting old data...')
+        City.objects.all().delete()
         Appointment.objects.all().delete()
         Reviews.objects.all().delete()
         TimeSlot.objects.all().delete()
         Clinic.objects.all().delete()
         Patient.objects.all().delete()
         Doctor.objects.all().delete()
-        User.objects.filter(role__in=['doctor', 'patient']).delete()
+        User.objects.all().delete()
+        self.stdout.write('Old data deleted.')
 
         # Create cities
         city_choices = City.CityChoices.choices
         
         city_objects = []
         for name in city_choices:
-            city, created = City.objects.get_or_create(name=name)
+            city, created = City.objects.get_or_create(name=name[0])
             city_objects.append(city)
             if created:
-                self.stdout.write(f'Created city: {name}')
+                self.stdout.write(f'Created city: {name[0]}')
 
         # Create doctors and their users
         doctor_objs = []
@@ -49,6 +51,7 @@ class Command(BaseCommand):
                 name=f'Dr. {first_name} {last_name}',
                 phone=f'01{random.randint(2,5)}{random.randint(10000000, 99999999)}',
                 role='doctor',
+                age =random.randint(30, 60),
                 username=f'dr_{first_name.lower()}_{last_name.lower()}_{i}',
                 city=random.choice(city_objects),
                 gender='male' if i % 2 else 'female'
@@ -175,16 +178,16 @@ class Command(BaseCommand):
                     doctor=doctor,
                     time_slot=slot,
                     status=random.choice(status_choices),
-                    name=fake.name(),
-                    phone=f'01{random.randint(0,2)}{random.randint(10000000, 99999999)}',
+                    name=fake.name() or "Default Name",
+                    phone=f'01{random.randint(0,2)}{random.randint(10000000, 99999999)}' or "000-000-0000",
                     age=random.randint(18, 80),
-                    city=random.choice([c.name for c in city_objects]),
-                    desc=fake.sentence()
+                    city=random.choice([c.name for c in city_objects]) or "Default City",
+                    desc=fake.sentence() or "Default Description"
                 )
                 # Call full_clean to trigger validation before saving
                 appt.full_clean()
                 appt.save()
-                
+
                 used_doctor_slots.add(doctor_slot_key)
                 appointment_count += 1
                 self.stdout.write(f"  Created guest appointment: #{appointment_count}")
@@ -227,8 +230,8 @@ class Command(BaseCommand):
         # Create admin user
         if not User.objects.filter(email='admin@clinic.com').exists():
             User.objects.create_superuser(
-                email='admin@clinic.com',
-                password='adminpass123',
+                email='admin@admin.com',
+                password='admin',
                 name='Admin User',
                 phone='01000000000',
                 username='admin',

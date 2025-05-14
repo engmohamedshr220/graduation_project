@@ -10,7 +10,7 @@ from accounts.permissions import IsAdminUser
 from clinic.filters import DoctorFilter
 from accounts.permissions import IsAdminOrDoctorUser
 from .models import Appointment, Doctor, Reviews
-from .serializers import (AppointmentCreateSerializer, AppointmentSerializer, DoctorSerializer,
+from .serializers import (AppointmentCreateSerializer, AppointmentUpdateSerializer,AppointmentSerializer, DoctorSerializer,
     ReviewsSerializer,DoctorUpdateSerializer)
 from drf_spectacular.utils import extend_schema,OpenApiExample
 from django_filters.rest_framework import DjangoFilterBackend
@@ -89,10 +89,14 @@ class DoctorViewSet(ModelViewSet):
     
     @action(detail=True, methods=['get'],url_path = 'appointments',url_name = 'appointments')
     def get_appointments(self, request, pk=None):
+        
         doctor = self.get_object()
         appointments = Appointment.objects.filter(doctor=doctor)
+        print(appointments) # Debug statement
         serializer = AppointmentSerializer(appointments, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    
     
     @action(detail=True, methods=['get'],url_path = 'reviews',url_name = 'reviews')
     def get_reviews(self, request, pk=None):
@@ -117,8 +121,32 @@ class DoctorViewSet(ModelViewSet):
         )
         doctor.reviews_count += 1
         return Response({'detail': 'Review added successfully'}, status=status.HTTP_201_CREATED)
+    
+    @action(detail=True, methods=['get', 'patch'], url_path='appointment/(?P<appointment_id>[^/.]+)', url_name='single_appointment')
+    def single_appointment(self, request, pk=None, appointment_id=None):
+        try:
+            # Retrieve the appointment by ID
+            appointment = Appointment.objects.get(id=appointment_id, doctor_id=pk)
+        except Appointment.DoesNotExist:
+            return Response({'detail': 'Appointment not found'}, status=status.HTTP_404_NOT_FOUND)
 
+        if request.method == 'GET':
+            serializer = AppointmentSerializer(appointment)
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
+        elif request.method == 'PATCH':
+            # Use the restricted update serializer
+            serializer = AppointmentUpdateSerializer(
+                appointment, 
+                data=request.data, 
+                partial=True,
+                context={'request': request}
+            )
+            
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class DoctorUpdateTokenApi(APIView):
     @extend_schema(

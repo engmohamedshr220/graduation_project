@@ -10,9 +10,10 @@ class MyUserSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(read_only=True)
     email = serializers.EmailField(read_only=True)
     city = serializers.CharField(required=False)
+    certification = serializers.ImageField(required=False)
     class Meta:
         model = User
-        fields = ['id', 'email','name','role','phone','city','profile_img']
+        fields = ['id', 'email','name','role','phone','city','profile_img','certification']
 
     def validate_city(self, value):
         if not value:
@@ -52,7 +53,7 @@ class MyUserSerializer(serializers.ModelSerializer):
         instance.phone = validated_data.get('phone', instance.phone)
         instance.city = validated_data.get('city', instance.city)
         instance.profile_img = validated_data.get('profile_img', instance.profile_img)
-        
+        instance.doctor.certification = validated_data.get('doctor', {}).get('certification', instance.doctor.certification)
         instance.save()
         return instance
 
