@@ -29,9 +29,6 @@ SECRET_KEY = 'django-insecure-zgo4#@i7&$c!_fk=9c0cm(tvu#!pdt4s947gzxcez8e_!ndfyb
 DEBUG = env.bool("DEBUG", default=True)
 
 
-import dj_database_url
-
-
 
 
 INSTALLED_APPS = [
@@ -168,11 +165,7 @@ DATABASES = {
 #     }
 # }
 
-# DATABASES = {
-#     'default': dj_database_url.config(
-#         default=env("DATABASE_URL", default="postgres://postgres:admin@localhost:5432/breast_cancer"),
-#     )
-# }
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
