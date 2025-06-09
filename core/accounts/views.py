@@ -82,8 +82,8 @@ class PasswordResetView(APIView):
             try:
                 html_content = render_to_string('emails/password_reset.html', {
                     'user': user,
-                    'code': code
-                },context={'name': user.first_name})
+                    'code': code,
+                'name': user.name})
 
                 # Fallback plain text version
                 text_content = f"Hello,\n\nYour password reset code is: {code}\n\nThanks,\nThe Vital Breast Team"
@@ -96,7 +96,7 @@ class PasswordResetView(APIView):
                 email_message.attach_alternative(html_content, "text/html")
                 email_message.send()
             except Exception as e:
-                return Response({'error': "Can't send email"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                return Response({'error': f"Can't send email {e }"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         except Exception as e:
             return Response({'error': "Can't generate code for this user"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

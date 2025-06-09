@@ -1,5 +1,5 @@
 from django.shortcuts import render
-import re
+import uuid
 from  rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -87,16 +87,7 @@ class DoctorViewSet(ModelViewSet):
         )
         return Response({'detail': 'Slot booked successfully'}, status=status.HTTP_201_CREATED)
     
-    @action(detail=True, methods=['get'],url_path = 'appointments',url_name = 'appointments')
-    def get_appointments(self, request, pk=None):
-        
-        doctor = self.get_object()
-        appointments = Appointment.objects.filter(doctor=doctor)
-        print(appointments) # Debug statement
-        serializer = AppointmentSerializer(appointments, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    
-    
+
     
     @action(detail=True, methods=['get'],url_path = 'reviews',url_name = 'reviews')
     def get_reviews(self, request, pk=None):
@@ -122,31 +113,6 @@ class DoctorViewSet(ModelViewSet):
         doctor.reviews_count += 1
         return Response({'detail': 'Review added successfully'}, status=status.HTTP_201_CREATED)
     
-    @action(detail=True, methods=['get', 'patch'], url_path='appointment/(?P<appointment_id>[^/.]+)', url_name='single_appointment')
-    def single_appointment(self, request, pk=None, appointment_id=None):
-        try:
-            # Retrieve the appointment by ID
-            appointment = Appointment.objects.get(id=appointment_id, doctor_id=pk)
-        except Appointment.DoesNotExist:
-            return Response({'detail': 'Appointment not found'}, status=status.HTTP_404_NOT_FOUND)
-
-        if request.method == 'GET':
-            serializer = AppointmentSerializer(appointment)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-
-        elif request.method == 'PATCH':
-            # Use the restricted update serializer
-            serializer = AppointmentUpdateSerializer(
-                appointment, 
-                data=request.data, 
-                partial=True,
-                context={'request': request}
-            )
-            
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_200_OK)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class DoctorUpdateTokenApi(APIView):
     @extend_schema(
@@ -163,3 +129,134 @@ class DoctorUpdateTokenApi(APIView):
 
 
 
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
+from drf_spectacular.types import OpenApiTypes
+class AppointmentViewSet(ModelViewSet):
+    queryset = Appointment.objects.all()
+    serializer_class = AppointmentSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'id'  # Explicitly set to 'id' which will now be UUID
+    
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            self.permission_classes = [IsAdminOrDoctorUser]
+        return super().get_permissions()
+
+    @extend_schema(
+        description="List all appointments for the authenticated user (doctor or patient)",
+        responses={200: AppointmentSerializer(many=True)},
+        examples=[
+            OpenApiExample(
+                'Example response',
+                value=[
+                    {
+                        "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",  # Example UUID
+                        "doctor": {"id": "..."},
+                        "patient": {"id": "..."},
+                        "date": "2023-05-15",
+                        "time": "14:30:00",
+                        "status": "confirmed"
+                    }
+                ],
+                response_only=True,
+                status_codes=['200']
+            )
+        ]
+    )
+    @action(detail=False, methods=['get'], url_path='user-appointments', url_name='user-appointments')
+    def get_appointments(self, request, pk=None):
+        user = request.user
+        if not user.is_authenticated:
+            return Response({'detail': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        if user.role == 'doctor':
+            appointments = Appointment.objects.filter(doctor=user.doctor)        
+        elif user.role == 'patient':
+            appointments = Appointment.objects.filter(patient=user.patient)
+        else:
+            return Response({'detail': 'Invalid user role'}, status=status.HTTP_403_FORBIDDEN)
+            
+        if not appointments.exists():
+            return Response({'detail': 'No appointments found'}, status=status.HTTP_404_NOT_FOUND)
+            
+        serializer = AppointmentSerializer(appointments, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    @extend_schema(
+        description="Retrieve or update a specific appointment",
+        methods=['GET'],
+        responses={200: AppointmentSerializer},
+        parameters=[
+            OpenApiParameter(
+                name='appointment_id',
+                type=OpenApiTypes.UUID,
+                location=OpenApiParameter.PATH,
+                description='UUID of the appointment'
+            )
+        ]
+    )
+    @extend_schema(
+        description="Update a specific appointment",
+        methods=['PATCH'],
+        request=AppointmentUpdateSerializer,
+        responses={200: AppointmentSerializer},
+        parameters=[
+            OpenApiParameter(
+                name='appointment_id',
+                type=OpenApiTypes.UUID,
+                location=OpenApiParameter.PATH,
+                description='UUID of the appointment'
+            )
+        ],
+        examples=[
+            OpenApiExample(
+                'Example request',
+                value={
+                    "status": "cancelled"
+                },
+                request_only=True,
+                status_codes=['200']
+            )
+        ]
+    )
+    @action(detail=False, methods=['get', 'patch'], url_path='user-appointments/(?P<appointment_id>[0-9a-f-]{36})', url_name='single-appointment')
+    def single_appointment(self, request, appointment_id=None, pk=None):
+        user = request.user
+        if not user.is_authenticated:
+            return Response({'detail': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        try:
+            appointment_uuid = uuid.UUID(appointment_id)
+        except ValueError:
+            return Response(
+                {'detail': 'Invalid UUID format'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            if user.role == 'doctor':
+                appointment = Appointment.objects.get(id=appointment_uuid, doctor=user.doctor)
+            elif user.role == 'patient':
+                appointment = Appointment.objects.get(id=appointment_uuid, patient=user.patient)
+            else:
+                return Response({'detail': 'Invalid user role'}, status=status.HTTP_403_FORBIDDEN)
+        except Appointment.DoesNotExist:
+            return Response({'detail': 'Appointment not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        if request.method == 'GET':
+            serializer = AppointmentSerializer(appointment)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        elif request.method == 'PATCH':
+            serializer = AppointmentUpdateSerializer(
+                appointment, 
+                data=request.data, 
+                partial=True,
+                context={'request': request}
+            )
+            
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        

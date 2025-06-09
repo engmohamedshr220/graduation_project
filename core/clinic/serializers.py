@@ -98,7 +98,7 @@ class AppointmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Appointment
         fields = ['id','doctor','patient','time_slot',
-                'status','name','age','phone','city',
+                'status','city',
                 'desc','created_at','updated_at'
                 ]
         extra_kwargs = {
@@ -114,10 +114,27 @@ class AppointmentSerializer(serializers.ModelSerializer):
             'name': instance.doctor.user.name,
             'email': instance.doctor.user.email,
             'phone': instance.doctor.user.phone,
-            'city': instance.doctor.city.name if hasattr(instance.doctor.city,'name') else None,
+            'city': instance.doctor.city.name if instance.doctor.city else None,
         }
-    
-    
+
+        # Handle cases where patient is None
+        if instance.patient:
+            representation['patient'] = {
+                'name': instance.patient.user.name,
+                'email': instance.patient.user.email,
+                'age': instance.patient.user.age,
+                'phone': instance.patient.user.phone,
+                'city': instance.patient.user.city.name if instance.patient.user.city else None,
+            }
+        else:
+            representation['patient'] = {
+                'name': instance.name,
+                'email': None,
+                'age': instance.age,
+                'phone': instance.phone,
+                'city': instance.city,
+            }
+
         return representation
 
 
