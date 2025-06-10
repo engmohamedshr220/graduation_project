@@ -63,13 +63,22 @@ class DoctorSerializer(serializers.ModelSerializer):
         
 
         return representation
-    def get_time_slots(self,instance):
+    def get_time_slots(self, instance):
+        # Start with all available time slots
+        time_slots_query = TimeSlot.objects.all()
+        
+        # Get booked slots
         booked_slots = Appointment.objects.values_list('time_slot', flat=True)
-        time_slots = TimeSlot.objects.exclude(
-            id__in=booked_slots).filter(
-                start_time__gte=instance.start_hour,
-                end_time__lte=instance.end_hour,)
-        return TimeSlotSerializer(time_slots, many=True).data
+        if booked_slots:
+            time_slots_query = time_slots_query.exclude(id__in=booked_slots)
+        
+        # Apply time constraints if they exist
+        if instance.start_hour is not None:
+            time_slots_query = time_slots_query.filter(start_time__gte=instance.start_hour)
+        if instance.end_hour is not None:
+            time_slots_query = time_slots_query.filter(end_time__lte=instance.end_hour)
+        
+        return TimeSlotSerializer(time_slots_query, many=True).data
 
 class ReviewsSerializer(serializers.ModelSerializer):
     patient = PatientSerializer(read_only = True)
