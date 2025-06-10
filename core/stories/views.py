@@ -13,11 +13,12 @@ class StoryViewset(viewsets.ModelViewSet):
     queryset = Story.objects.all()
     serializer_class = StorySerializer
     permission_classes = [IsAuthenticated]
-    def get_queryset(self):
-        return self.queryset.filter(user=self.request.user)
+    
+    
+    
     
     def get_permissions(self):
-        if self.action in ['list','retrieve']:
+        if self.action in ['list','retrieve','comments']:
             self.permission_classes = [AllowAny]
         return super().get_permissions()
     @action(detail=True, methods=['post'] , url_path='like', url_name='like')
