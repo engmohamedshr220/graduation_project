@@ -12,7 +12,7 @@ from accounts.permissions import IsAdminOrDoctorUser
 from .models import Appointment, Doctor, Reviews
 from .serializers import (AppointmentCreateSerializer, AppointmentUpdateSerializer,AppointmentSerializer, DoctorSerializer,
     ReviewsSerializer,DoctorUpdateSerializer)
-from drf_spectacular.utils import extend_schema,OpenApiExample
+from drf_spectacular.utils import extend_schema, OpenApiRequest, OpenApiExample
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter
 from rest_framework import status 
@@ -47,9 +47,13 @@ class DoctorViewSet(ModelViewSet):
     
     
     @extend_schema(
-        request=AppointmentCreateSerializer,
+        request=OpenApiRequest(
+            request=AppointmentCreateSerializer,
+            ),
         responses={
-            201:AppointmentCreateSerializer,},
+            201:AppointmentCreateSerializer,
+            
+            },
         
         examples=[
             OpenApiExample(
@@ -76,15 +80,10 @@ class DoctorViewSet(ModelViewSet):
     )
     @action(detail=True, methods=['post'],url_path = 'book_slot',url_name = 'book_slot')
     def book_slot(self,request , pk=None):
-        doctor =  self.get_object()
-        serializer= self.get_serializer(data=request.data, context = {'request': request, 'doctor': doctor})
+        doctor = self.get_object()
+        serializer = self.get_serializer(data=request.data, context={'request': request, 'doctor': doctor})
         serializer.is_valid(raise_exception=True)
-        Appointment.objects.create(
-            doctor = doctor,
-            patient = request.user.patient,
-            time_slot = request.data.get('time_slot'),
-            status = 'booked'
-        )
+        serializer.save()
         return Response({'detail': 'Slot booked successfully'}, status=status.HTTP_201_CREATED)
     
 

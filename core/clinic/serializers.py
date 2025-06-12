@@ -1,7 +1,7 @@
 import re
 from rest_framework import serializers
 from django.db import transaction
-from django.core.exceptions import ObjectDoesNotExist
+import django.core.exceptions
 
 
 import rest_framework.generics
@@ -126,6 +126,8 @@ class AppointmentSerializer(serializers.ModelSerializer):
             'city': instance.doctor.city.name if instance.doctor.city else None,
         }
 
+
+
         # Handle cases where patient is None
         if instance.patient:
             representation['patient'] = {
@@ -177,7 +179,7 @@ class AppointmentUpdateSerializer(serializers.ModelSerializer):
             )
         return attrs
 class AppointmentCreateSerializer(serializers.ModelSerializer):
-
+    patient = serializers.UUIDField(read_only = True)
     time_slot = serializers.PrimaryKeyRelatedField(queryset=TimeSlot.objects.all())
    
     class Meta:
@@ -186,14 +188,18 @@ class AppointmentCreateSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         request = self.context.get('request')
-        patient = request.user.patient if request else None
+
+
         doctor = self.context.get('doctor')
         time_slot = validated_data['time_slot']
-        
+        if request.user.role != 'patient':
+            return serializers.ValidationError({"error":"you are not a patient"})
+        else :
+            patient = request.user.patient
         with transaction.atomic():
             # Check if the time slot is already booked
          
-            if Appointment.objects.filter(time_slot=time_slot).exists():
+            if Appointment.objects.filter(time_slot=time_slot , doctor=doctor).exists():
                 raise serializers.ValidationError("This time slot is already booked.")
 
             return Appointment.objects.create(

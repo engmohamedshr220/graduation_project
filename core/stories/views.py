@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from rest_framework import viewsets
+from  rest_framework.viewsets import ModelViewSet
 from rest_framework.decorators import action
 import rest_framework.permissions
 from .models import Story , Comment , CommentLike, StoryLike
@@ -9,11 +9,16 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, AllowAny
 
 
-class StoryViewset(viewsets.ModelViewSet):
+class StoryViewset(ModelViewSet):
     queryset = Story.objects.all()
     serializer_class = StorySerializer
     permission_classes = [IsAuthenticated]
     
+    
+    def get_serializer_class(self):
+        if self.action in ['comment']:
+            return CommentSerializer
+        return super().get_serializer_class()
     
     
     
@@ -55,7 +60,7 @@ class StoryViewset(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     
-    @action(detail=True, methods=['post'], url_path='comment', url_name='comment')
+    @action(detail=True, methods=['post','put'], url_path='comment', url_name='comment')
     def comment(self, request, pk=None):
         story = self.get_object()
         serializer = CommentSerializer(data=request.data)
@@ -63,13 +68,28 @@ class StoryViewset(viewsets.ModelViewSet):
         serializer.save(author=request.user, story=story)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     
-    @action(detail=True, methods=['delete'], url_path='comment', url_name='comment')
-    def delete_comment(self, request, pk=None):
+    @action(detail=True, methods=['delete'], url_path='comment/(?P<comment_id>[^/.]+)', url_name='comment-delete')
+    def delete_comment(self, request, pk=None, comment_id=None):
         story = self.get_object()
-        comment = story.comments.filter(id=request.data.get('comment_id')).first()
-        if comment:
+        
+        try:
+            comment = story.comments.get(id=comment_id)
+            # Check if the user is the author of the comment
+            if comment.author != request.user:
+                return Response(
+                    {'detail': 'You are not authorized to delete this comment'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
             comment.delete()
-        return Response({'detail': 'Comment deleted'}, status=status.HTTP_200_OK)
+            return Response(
+                {'detail': 'Comment deleted successfully'}, 
+                status=status.HTTP_200_OK
+            )
+        except Comment.DoesNotExist:
+            return Response(
+                {'detail': 'Comment not found'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
     
 
 

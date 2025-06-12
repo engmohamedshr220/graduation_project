@@ -14,6 +14,6 @@ def create_user_profile(sender, instance, created, **kwargs):
         elif instance.role == User.Role.PATIENT:
             # Create a Patient profile
             Patient.objects.create(user=instance)
-
+            
 
 

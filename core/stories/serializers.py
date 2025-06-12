@@ -14,14 +14,21 @@ class StorySerializer(serializers.ModelSerializer):
             "name": obj.author.name,
             "email": obj.author.email,
             "phone": obj.author.phone,
-
         }
+
+    def create(self, validated_data):
+        request = self.context.get('request')
+        if request and hasattr(request, 'user'):
+            validated_data['author'] = request.user
+        return super().create(validated_data)
+
     class Meta:
         model = Story
         fields = ['id','author','content','num_of_likes','num_of_comments','created_at','updated_at']
         
 
 class CommentSerializer(serializers.ModelSerializer):
+    story =  serializers.UUIDField(read_only = True)
     author = serializers.SerializerMethodField(read_only=True)
     id = serializers.UUIDField(read_only=True)
     num_of_likes = serializers.IntegerField( read_only=True)
